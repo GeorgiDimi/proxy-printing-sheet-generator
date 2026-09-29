@@ -73,6 +73,34 @@ NODE_CROSS_W_MM = 0.2     # thickness of the cross lines
 AUTO_BLEED = True
 BLEED_MM = 3.0      # fallback bleed per edge (mm) when AUTO_BLEED is False
                     # or when an image's size cannot be read.
+
+# ---------------------------------------------------------------------------
+# DEBUG / PRINTER-SETUP MODE
+# ---------------------------------------------------------------------------
+# Turn this on to print fewer than a full grid of cards and place them in
+# specific slots, for calibrating a printer (checking size, margins, and
+# exactly where ink lands on the page).
+DEBUG_MODE = False
+
+# DEBUG_SLOTS maps a grid position to a card. A position is (row, col) with
+# row 0 = top, col 0 = left. The value picks which image goes there:
+#   - an int   -> index into the cards folder (0 = first image, sorted by name)
+#   - a str    -> a filename (or partial name) to match in the cards folder
+# Any slot you don't list is left blank. Only ONE page is produced in debug
+# mode, using exactly these placements. Guides/marks still draw normally.
+#
+# Examples:
+#   {(0, 0): 0}                      -> one card in the top-left corner
+#   {(0, 0): 0, (2, 2): 0}           -> same card in top-left and bottom-right
+#   {(1, 1): "lotus"}                -> match a file whose name contains "lotus"
+#   {(r, c): 0 for r in range(ROWS) for c in range(COLS)}  -> fill every slot
+DEBUG_SLOTS = {
+    (0, 0): 0,   # top-left
+    (0, 2): 0,   # top-right
+    (2, 0): 0,   # bottom-left
+    (2, 2): 0,   # bottom-right
+    (1, 1): 0,   # center
+}
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -262,10 +290,63 @@ def guides_html():
     return "".join(parts)
 
 
+def resolve_slot_image(value, images):
+    """Resolve a DEBUG_SLOTS value (int index or filename substring) to an
+    image Path, or None if it can't be matched."""
+    if not images:
+        return None
+    if isinstance(value, int):
+        if 0 <= value < len(images):
+            return images[value]
+        return None
+    if isinstance(value, str):
+        needle = value.lower()
+        # exact name first, then substring match
+        for p in images:
+            if p.name.lower() == needle:
+                return p
+        for p in images:
+            if needle in p.name.lower():
+                return p
+        return None
+    return None
+
+
+def build_debug_page(images):
+    """Build a single page using DEBUG_SLOTS placements. Slots not listed are
+    blank. Returns (page_html, placements) where placements is a list of
+    (row, col, Path|None) for logging."""
+    per_page = COLS * ROWS
+    guides = guides_html()
+
+    placements = []
+    cells = []
+    for idx in range(per_page):
+        r, c = divmod(idx, COLS)
+        val = DEBUG_SLOTS.get((r, c))
+        img = resolve_slot_image(val, images) if val is not None else None
+        placements.append((r, c, img))
+        if img is not None:
+            cells.append(card_cell(img))
+        else:
+            cells.append('<div class="cell"><div class="card empty-cell"></div></div>')
+
+    page_html = (
+        f'<div class="page">'
+        f'<div class="block">'
+        f'<div class="grid">{"".join(cells)}</div>'
+        f'{guides}'
+        f'</div>'
+        f'</div>'
+    )
+    return page_html, placements
+
+
 def build_html(images):
     per_page = COLS * ROWS
     trim_border = "0.2mm solid rgba(0,0,0,0.55)" if CUT_LINES else "none"
 
+    debug_placements = None
     pages_html = []
     if not images:
         pages_html.append(
@@ -273,6 +354,9 @@ def build_html(images):
             '<code>cards</code> folder.<br>'
             'Drop your card images in there and run the script again.</div>'
         )
+    elif DEBUG_MODE:
+        page_html, debug_placements = build_debug_page(images)
+        pages_html.append(page_html)
     else:
         guides = guides_html()
         for page_imgs in chunk(images, per_page):
@@ -288,8 +372,19 @@ def build_html(images):
                 f'</div>'
             )
 
-    total = len(images)
-    num_pages = (total + per_page - 1) // per_page if total else 0
+    if DEBUG_MODE and debug_placements is not None:
+        total = sum(1 for _, _, img in debug_placements if img is not None)
+        num_pages = 1
+        debug_banner = (
+            '<div class="info" style="background:#fff3cd;border-bottom-color:#e0c96b;">'
+            f'<b>DEBUG / printer-setup mode</b> &mdash; single page, {total} card(s) '
+            'placed in fixed slots. Turn off <code>DEBUG_MODE</code> for a normal run.'
+            '</div>'
+        )
+    else:
+        total = len(images)
+        num_pages = (total + per_page - 1) // per_page if total else 0
+        debug_banner = ""
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -459,6 +554,7 @@ def build_html(images):
     {"&nbsp;|&nbsp; <b>To cut:</b> align a straightedge between a top tick and its matching bottom tick (or left/right) and cut straight through the whole sheet on each grid line." if EDGE_TICKS else ""}
     &nbsp;|&nbsp; Print with <b>Cmd+P</b>, scale <b>100%</b>, margins <b>Default/None</b>.
   </div>
+  {debug_banner}
   {"".join(pages_html)}
 </body>
 </html>
@@ -470,6 +566,29 @@ def main():
     images = find_images(CARDS_DIR)
     html = build_html(images)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
+
+    if DEBUG_MODE:
+        print("=== DEBUG / printer-setup mode ON ===")
+        print(f"Grid: {ROWS} rows x {COLS} cols. Slots use (row, col), "
+              "row 0 = top, col 0 = left.")
+        _, placements = build_debug_page(images)
+        placed = 0
+        for r, c, img in placements:
+            if img is not None:
+                placed += 1
+                print(f"  slot (row {r}, col {c}) -> {img.name}")
+        # Report any requested slots that couldn't be filled.
+        for (r, c), val in DEBUG_SLOTS.items():
+            if not (0 <= r < ROWS and 0 <= c < COLS):
+                print(f"  !! slot (row {r}, col {c}) is outside the "
+                      f"{ROWS}x{COLS} grid -- ignored")
+            elif resolve_slot_image(val, images) is None:
+                print(f"  !! slot (row {r}, col {c}) value {val!r} matched "
+                      "no image -- left blank")
+        print(f"Placed {placed} card(s) on 1 page.")
+        print(f"\nWrote: {OUTPUT_FILE}")
+        print("Open it in your browser and print (Cmd+P).")
+        return
 
     mode = "AUTO (per-image)" if AUTO_BLEED else f"FIXED {BLEED_MM:g} mm"
     print(f"Bleed mode: {mode}. Trim target: "

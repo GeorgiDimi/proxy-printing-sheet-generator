@@ -120,6 +120,47 @@ AUTO_BLEED = True   # auto-detect & trim each image's bleed to the card edge
 BLEED_MM = 3.0      # fallback bleed per edge when AUTO_BLEED is False
 ```
 
+## Debug / printer-setup mode
+
+When calibrating a printer you often want to print just a few cards in
+specific positions — for example one card in each corner and one in the
+center — to check the true printed size, page margins, and exactly where the
+printer lands ink.
+
+Set `DEBUG_MODE = True` and define `DEBUG_SLOTS`. A slot is keyed by
+`(row, col)` (row 0 = top, col 0 = left) and its value picks the image:
+
+- an **int** — index into the cards folder (0 = first image, sorted by name)
+- a **str** — a filename or partial name to match in the cards folder
+
+Any slot you don't list is left blank, and only a single page is produced.
+
+```python
+DEBUG_MODE = True
+DEBUG_SLOTS = {
+    (0, 0): 0,   # top-left
+    (0, 2): 0,   # top-right
+    (2, 0): 0,   # bottom-left
+    (2, 2): 0,   # bottom-right
+    (1, 1): 0,   # center
+}
+```
+
+Other examples:
+
+```python
+DEBUG_SLOTS = {(0, 0): 0}                 # single card, top-left only
+DEBUG_SLOTS = {(1, 1): "lotus"}           # match a filename containing "lotus"
+DEBUG_SLOTS = {(r, c): 0                   # fill every slot with the first image
+               for r in range(ROWS) for c in range(COLS)}
+```
+
+The cards keep their true grid positions and all the normal cut marks, so you
+can measure from the paper edge to a corner card to find your printer's offset.
+The terminal output lists exactly what was placed in each slot (and warns about
+slots that are off-grid or matched no image). Set `DEBUG_MODE = False` for a
+normal full run.
+
 ## Requirements
 
 - Python 3 (uses only the standard library — no packages to install).
