@@ -3,19 +3,21 @@
 make_print_sheet.py
 -------------------
 Builds a printable HTML sheet of standard-size trading cards (63 x 88 mm,
-"poker size") from source images that include a print bleed.
+"poker size") from source images that include a print bleed, such as those
+exported from MPCFill (MakePlayingCards).
 
-Many card print services export images with extra artwork (bleed) around the
-card so the cut never leaves a white edge. A common export carries roughly
-3 mm of bleed on every side:
+MPCFill / MakePlayingCards images carry extra artwork (bleed) around the card
+so the cut never leaves a white edge. A typical export has about 3 mm of bleed
+on every side:
   - Final card (trim) size ......... 63 x 88 mm
   - Bleed added each edge .......... ~3 mm
   - Full source image size ......... ~69 x 94 mm
 
 This script does NOT modify your source files. Instead it displays each
 image at full bleed size and clips the visible area down to the true
-63 x 88 mm trim box (removing the bleed from every edge). The printed card is
-therefore the correct size, with alignment marks so you can cut precisely.
+63 x 88 mm trim box (removing the bleed from every edge), so the MPCFill bleed
+is trimmed off and the printed card is the correct size. Alignment marks are
+added so you can cut precisely.
 
 Usage:
     python3 make_print_sheet.py
@@ -67,7 +69,7 @@ NODE_CROSS_W_MM = 0.2     # thickness of the cross lines
 # Bleed handling:
 #   AUTO_BLEED = True  -> measure each image and trim EXACTLY to the 63x88
 #                         trim box based on its real aspect ratio (recommended
-#                         for bleed-included exports, which often carry
+#                         for MPCFill / MakePlayingCards exports, which carry
 #                         ~3.19 mm bleed).
 #   AUTO_BLEED = False -> use the fixed BLEED_MM value below for every image.
 AUTO_BLEED = True
@@ -352,7 +354,7 @@ def build_html(images):
         pages_html.append(
             '<div class="empty">No images found in the '
             '<code>cards</code> folder.<br>'
-            'Drop your card images in there and run the script again.</div>'
+            'Drop your card images (e.g. from MPCFill) in there and run the script again.</div>'
         )
     elif DEBUG_MODE:
         page_html, debug_placements = build_debug_page(images)

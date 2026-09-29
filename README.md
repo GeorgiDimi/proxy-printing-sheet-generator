@@ -3,10 +3,13 @@
 Generate a printable HTML sheet of standard-size trading cards (63 × 88 mm,
 "poker size") from your own source images, sized precisely for cutting at home.
 
-The script auto-detects and trims the print bleed that many card exports carry,
-lays the cards out butted together so adjacent cards share one cut line, and
-adds alignment marks that make every cut line — including interior ones — easy
-to index with a ruler or paper trimmer.
+Card images exported from services like **MPCFill** come with a **print bleed**
+— extra artwork around the card so a slightly-off cut never leaves a white
+edge. **This script automatically detects and removes that bleed**, trimming
+each image down to the true 63 × 88 mm card so your printed cards are the
+correct size. It also lays the cards out butted together so adjacent cards
+share one cut line, and adds alignment marks that make every cut line —
+including interior ones — easy to index with a ruler or paper trimmer.
 
 > This tool only handles layout and printing of images **you** supply. It does
 > not include, download, or distribute any card artwork. Do not use it to
@@ -74,21 +77,22 @@ Optional: set `GRID_LINES = True` in the script to also print faint gray lines
 running the full length of the sheet along every cut line (the lines print
 across the card faces, so the ticks + crosses are usually cleaner).
 
-## Bleed handling
+## Bleed handling (removing the MPCFill bleed)
 
-Many card print/export services add extra artwork (**bleed**) around the card
-so the cut never leaves a white edge. A common export carries roughly
-**3–3.2 mm of bleed per edge** (full image ≈ 69.4 × 94.4 mm; final card
-63 × 88 mm).
+**MPCFill (and other MakePlayingCards-style exports) add a print bleed** — a
+band of extra artwork around the card so the cut never leaves a white edge. A
+typical MPCFill image carries roughly **3–3.2 mm of bleed per edge** (full
+image ≈ 69.4 × 94.4 mm) around the true **63 × 88 mm** card.
 
-The script does **not** edit your source images. Instead it displays each image
-at full size and clips the visible area down to the true 63 × 88 mm trim box —
-so exactly the bleed is trimmed off and the printed card is the correct size.
+**This script removes that bleed for you.** It does **not** edit your source
+images — instead it displays each image at full size and clips the visible area
+down to the true 63 × 88 mm trim box, so exactly the bleed is trimmed off and
+the printed card comes out the correct size.
 
 By default `AUTO_BLEED = True`: the script measures each image's real aspect
 ratio and trims to the exact card edge automatically. This adapts to whatever
-bleed an export uses. If an image's ratio doesn't look like a bleed card, or it
-can't be read, it falls back to the fixed `BLEED_MM` value.
+bleed an MPCFill (or other) export uses. If an image's ratio doesn't look like
+a bleed card, or it can't be read, it falls back to the fixed `BLEED_MM` value.
 
 To turn off auto-detection and always trim a fixed amount, set in the script:
 
