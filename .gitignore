@@ -1,0 +1,33 @@
+# Generated output (self-contained, can be large due to embedded images)
+print_sheet.html
+
+# User-supplied card images and archives — never commit their contents,
+# but keep the (empty) folders so the structure is preserved via .gitkeep.
+cards/*
+archival/*
+!cards/.gitkeep
+!archival/.gitkeep
+
+# Image files anywhere in the repo (safety net so no artwork is ever committed)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.tif
+*.tiff
+
+# Rendered/preview artifacts
+_preview.png
+_check.png
+_zoom.png
+_zoomcheck.png
+_verify.pdf
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
