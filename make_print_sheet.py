@@ -97,11 +97,19 @@ DEBUG_MODE = False
 #   {(1, 1): "lotus"}                -> match a file whose name contains "lotus"
 #   {(r, c): 0 for r in range(ROWS) for c in range(COLS)}  -> fill every slot
 DEBUG_SLOTS = {
-    (0, 0): 0,   # top-left
-    (0, 2): 0,   # top-right
-    (2, 0): 0,   # bottom-left
-    (2, 2): 0,   # bottom-right
-    (1, 1): 0,   # center
+    # All 9 grid slots are listed below. Set a value to place a card there,
+    # or comment the line out (or delete it) to leave that slot blank.
+    # Value: an int = image index in the cards folder (0 = first, by name),
+    #        or a str = filename / partial name to match.
+    (0, 0): 0,     # top-left
+    (0, 1): 0,     # top-center
+    (0, 2): 0,     # top-right
+    (1, 0): 0,     # middle-left
+    (1, 1): 0,     # middle-center
+    (1, 2): 0,     # middle-right
+    (2, 0): 0,     # bottom-left
+    (2, 1): 0,     # bottom-center
+    (2, 2): 0,     # bottom-right
 }
 # ---------------------------------------------------------------------------
 

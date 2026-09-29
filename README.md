@@ -25,11 +25,16 @@ images and output never get committed.)
 
 ## How to use
 
+> **Prerequisite:** you need **Python 3** installed (see
+> [Prerequisites](#prerequisites) below). No other packages are required.
+
 1. Drop your card images into the **cards** folder.
 2. Run the script one of two ways:
    - **Double-click** `Make Print Sheet.command` in Finder (macOS), **or**
    - In a terminal: `python3 make_print_sheet.py`
-3. `print_sheet.html` is generated. Open it in your browser and review it.
+3. `print_sheet.html` is generated. **Open it in Google Chrome** and review it.
+   Use Chrome for both viewing and printing — **Safari has issues rendering the
+   PDF** (it mis-paginates the grid and can split cards across pages).
 4. Print with **Cmd/Ctrl+P**. Use these settings for correct sizing:
    - Scale: **100%** (do NOT "fit to page")
    - Margins: **Default** or **None**
@@ -131,6 +136,15 @@ specific positions — for example one card in each corner and one in the
 center — to check the true printed size, page margins, and exactly where the
 printer lands ink.
 
+> **Where you configure this:** debug mode is controlled **only by editing the
+> Python constants** (`DEBUG_MODE` and `DEBUG_SLOTS`) at the top of
+> `make_print_sheet.py`, then re-running the script. There is **no** browser
+> toggle, no setting inside the generated `print_sheet.html`, and no
+> command-line flag — the placements are baked into the HTML when the script
+> runs. (If you don't run Python, the equivalent would be to hand-edit the
+> generated HTML to remove/reposition cards, which is far more tedious; editing
+> the two Python constants is the intended way.)
+
 Set `DEBUG_MODE = True` and define `DEBUG_SLOTS`. A slot is keyed by
 `(row, col)` (row 0 = top, col 0 = left) and its value picks the image:
 
@@ -165,9 +179,29 @@ The terminal output lists exactly what was placed in each slot (and warns about
 slots that are off-grid or matched no image). Set `DEBUG_MODE = False` for a
 normal full run.
 
-## Requirements
+## Prerequisites
 
-- Python 3 (uses only the standard library — no packages to install).
+- **Python 3 must be installed** (version 3.6 or newer). The script uses only
+  the Python standard library, so there are **no extra packages to install**.
+
+Check whether you already have it — in a terminal run:
+
+```bash
+python3 --version
+```
+
+If you see something like `Python 3.13.x`, you're good to go. If instead you
+get `command not found`, install Python 3:
+
+- **macOS:** it often ships with the system, but the easiest up-to-date option
+  is [Homebrew](https://brew.sh): `brew install python`, or download the
+  installer from <https://www.python.org/downloads/>.
+- **Windows:** download from <https://www.python.org/downloads/> and tick
+  "Add Python to PATH" during install (then use `python` instead of `python3`).
+- **Linux:** install via your package manager, e.g. `sudo apt install python3`.
+
+No other software is required to generate the sheet. (Google Chrome is
+recommended for viewing/printing the result — see the printing steps above.)
 
 ## Notes
 
