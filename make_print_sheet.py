@@ -64,7 +64,7 @@ NODE_CROSS = True   # draw a small + cross at every grid node (where card
                     # a ruler on interior cut lines. Visible in the rounded
                     # corner nooks and survives cutting.
 NODE_CROSS_LEN_MM = 2.0   # length of each arm of the cross
-NODE_CROSS_W_MM = 0.2     # thickness of the cross lines
+NODE_CROSS_W_MM = 0.1     # thickness of the cross lines
 
 # Bleed handling:
 #   AUTO_BLEED = True  -> measure each image and trim EXACTLY to the 63x88
@@ -84,32 +84,46 @@ BLEED_MM = 3.0      # fallback bleed per edge (mm) when AUTO_BLEED is False
 # exactly where ink lands on the page).
 DEBUG_MODE = False
 
+# Sentinel meaning "fill this slot with the next unused image from the front
+# of the cards list." Use AUTO for every slot you enable, and the program
+# walks the enabled slots in reading order (top-left to bottom-right) handing
+# out the 1st, 2nd, 3rd... image. This fills your open spots with the first
+# images in the list instead of repeating the very first one.
+AUTO = "__AUTO_NEXT__"
+
 # DEBUG_SLOTS maps a grid position to a card. A position is (row, col) with
 # row 0 = top, col 0 = left. The value picks which image goes there:
+#   - AUTO     -> the next unused image from the front of the list (recommended
+#                 when you just want your open slots filled with the first
+#                 images, one each, in reading order)
 #   - an int   -> index into the cards folder (0 = first image, sorted by name)
 #   - a str    -> a filename (or partial name) to match in the cards folder
 # Any slot you don't list is left blank. Only ONE page is produced in debug
 # mode, using exactly these placements. Guides/marks still draw normally.
 #
 # Examples:
-#   {(0, 0): 0}                      -> one card in the top-left corner
+#   {(0, 0): AUTO}                   -> first image in the top-left corner
+#   {(0, 0): AUTO, (2, 2): AUTO}     -> 1st image top-left, 2nd bottom-right
+#   {(0, 0): 0}                      -> force image index 0 in the top-left
 #   {(0, 0): 0, (2, 2): 0}           -> same card in top-left and bottom-right
 #   {(1, 1): "lotus"}                -> match a file whose name contains "lotus"
-#   {(r, c): 0 for r in range(ROWS) for c in range(COLS)}  -> fill every slot
+#   {(r, c): AUTO for r in range(ROWS) for c in range(COLS)}  -> fill every slot
 DEBUG_SLOTS = {
     # All 9 grid slots are listed below. Set a value to place a card there,
     # or comment the line out (or delete it) to leave that slot blank.
-    # Value: an int = image index in the cards folder (0 = first, by name),
+    # Value: AUTO = next unused image from the front of the list (fills your
+    #               open slots with the first images, one each, in order),
+    #        an int = image index in the cards folder (0 = first, by name),
     #        or a str = filename / partial name to match.
-    (0, 0): 0,     # top-left
-    (0, 1): 0,     # top-center
-    (0, 2): 0,     # top-right
-    (1, 0): 0,     # middle-left
-    (1, 1): 0,     # middle-center
-    (1, 2): 0,     # middle-right
-    (2, 0): 0,     # bottom-left
-    (2, 1): 0,     # bottom-center
-    (2, 2): 0,     # bottom-right
+    # (0, 0): AUTO,     # top-left
+    # (0, 1): AUTO,     # top-center
+    (0, 2): AUTO,     # top-right
+    (1, 0): AUTO,     # middle-left
+    (1, 1): AUTO,     # middle-center
+    (1, 2): AUTO,     # middle-right
+    (2, 0): AUTO,     # bottom-left
+    (2, 1): AUTO,     # bottom-center
+    (2, 2): AUTO,     # bottom-right
 }
 # ---------------------------------------------------------------------------
 
@@ -331,10 +345,20 @@ def build_debug_page(images):
 
     placements = []
     cells = []
+    next_auto = 0  # how many AUTO slots we've filled -> index into images
     for idx in range(per_page):
         r, c = divmod(idx, COLS)
         val = DEBUG_SLOTS.get((r, c))
-        img = resolve_slot_image(val, images) if val is not None else None
+        if val == AUTO:
+            # Fill AUTO slots with the first images in the list, one each,
+            # in reading order (top-left to bottom-right).
+            img = images[next_auto] if next_auto < len(images) else None
+            if img is not None:
+                next_auto += 1
+        elif val is not None:
+            img = resolve_slot_image(val, images)
+        else:
+            img = None
         placements.append((r, c, img))
         if img is not None:
             cells.append(card_cell(img))
@@ -588,11 +612,15 @@ def main():
                 placed += 1
                 print(f"  slot (row {r}, col {c}) -> {img.name}")
         # Report any requested slots that couldn't be filled.
+        placed_map = {(r, c): img for r, c, img in placements}
         for (r, c), val in DEBUG_SLOTS.items():
             if not (0 <= r < ROWS and 0 <= c < COLS):
                 print(f"  !! slot (row {r}, col {c}) is outside the "
                       f"{ROWS}x{COLS} grid -- ignored")
-            elif resolve_slot_image(val, images) is None:
+            elif val == AUTO and placed_map.get((r, c)) is None:
+                print(f"  !! slot (row {r}, col {c}) is AUTO but there are "
+                      "not enough images to fill it -- left blank")
+            elif val != AUTO and resolve_slot_image(val, images) is None:
                 print(f"  !! slot (row {r}, col {c}) value {val!r} matched "
                       "no image -- left blank")
         print(f"Placed {placed} card(s) on 1 page.")
